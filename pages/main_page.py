@@ -8,9 +8,15 @@ from selenium.common.exceptions import TimeoutException
 class MainPage:
     CONSTRUCTOR_LINK = (By.LINK_TEXT, "Конструктор")
     ORDERS_LINK = (By.LINK_TEXT, "Лента Заказов")
+    ORDER_BUTTON = (By.XPATH, "//button[contains(., 'Оформить заказ')]")
+    ORDER_NUMBER = (By.CSS_SELECTOR, '[class*="opened"] h2[class*="text_type_digits-large"]')
 
     def __init__(self, driver):
         self.driver = driver
+
+    def click_order_button(self):
+        button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(self.ORDER_BUTTON))
+        self.driver.execute_script("arguments[0].click();", button)
 
     def click_constructor(self):
         el = self.driver.find_element(*self.CONSTRUCTOR_LINK)
@@ -25,7 +31,9 @@ class MainPage:
         self.driver.execute_script("arguments[0].click();", el)
 
     def drag_ingredient_to_constructor(self):
-        source = self.driver.find_element(By.CSS_SELECTOR, '[class*="BurgerIngredient_ingredient_"][href]')
+        source = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[class*="BurgerIngredient_ingredient_"][href]'))
+        )
         target = self.driver.find_element(By.CSS_SELECTOR, '[class*="BurgerConstructor_basket"]')
 
         js_script = """
@@ -58,6 +66,12 @@ class MainPage:
         source = self.driver.find_element(By.CSS_SELECTOR, '[class*="BurgerIngredient_ingredient_"][href]')
         counter = source.find_element(By.CSS_SELECTOR, '[class*="counter_counter_"]')
         return counter.text
+    
+    def get_order_number(self, timeout=15):
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: d.find_element(*self.ORDER_NUMBER).text.strip() not in ("", "9999")
+        )
+        return self.driver.find_element(*self.ORDER_NUMBER).text
 
 
 class IngredientPopup:
