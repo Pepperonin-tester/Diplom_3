@@ -2,12 +2,8 @@ import pytest
 import requests
 import uuid
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-BASE_URL = "https://stellarburgers.education-services.ru"
-API_URL = BASE_URL + "/api"
+from pages.login_page import LoginPage
+from urls import BASE_URL, API_URL
 
 
 @pytest.fixture
@@ -21,20 +17,14 @@ def registered_user(driver):
     })
 
     driver.get(BASE_URL + "/login")
-    driver.find_element(By.CSS_SELECTOR, 'input[type="text"]').send_keys(email)
-    driver.find_element(By.CSS_SELECTOR, 'input[type="password"]').send_keys(password)
-
-    login_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Войти')]"))
-    )
-    driver.execute_script("arguments[0].click();", login_button)
-
-    WebDriverWait(driver, 10).until(lambda d: "/login" not in d.current_url)
+    login_page = LoginPage(driver)
+    login_page.login(email, password)
 
     yield
 
-    token = driver.execute_script("return window.localStorage.getItem('accessToken');")
+    token = login_page.get_access_token()
     requests.delete(f"{API_URL}/auth/user", headers={"Authorization": token})
+
 
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
